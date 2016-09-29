@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"sort"
 )
@@ -21,12 +22,13 @@ type QueryOption struct {
 // QueryResult ...
 type QueryResult struct {
 	Count          int64    `json:"count"`
-	Filterfeatures []string `json:"filterfeatures"`
+	HasProfile     bool     `json:"hasProfile"`
+	FilterFeatures []string `json:"filterfeatures"`
 	FilterSuburbs  []string `json:"filterSuburbs"`
 }
 
 var (
-	baseURL = "http://localhost:8000"
+	baseURL = "http://localhost:8000" //"www.broadsheet.com.au"
 	query   string
 	opt     QueryOption
 	result  QueryResult
@@ -82,7 +84,7 @@ func testDirectMatch() {
 	fmt.Println("Testing direct matching logic")
 	query = "hinoki japanese pantry"
 	result = fetchResult(query, opt)
-	if len(result.Filterfeatures) > 0 {
+	if len(result.FilterFeatures) > 0 {
 		fmt.Println("Should not parse a direct match")
 	} else {
 		fmt.Println("Pass")
@@ -94,9 +96,7 @@ func testDirectMatch() {
 func testSuburbAndFeatureMatch() {
 	query = "fitzroy sushi"
 	result = fetchResult(query, opt)
-	// sort.Strings(result.Filterfeatures)
-	// i := sort.SearchStrings(result.Filterfeatures, "sushi")
-	if !stringInSlice("sushi", result.Filterfeatures) {
+	if !stringInSlice("sushi", result.FilterFeatures) {
 		fmt.Println("Should do features match")
 	} else if !stringInSlice("fitzroy", result.FilterSuburbs) {
 		fmt.Println("Should do suburbs match")
@@ -105,12 +105,41 @@ func testSuburbAndFeatureMatch() {
 	}
 }
 
-func main() {
-	//testSth()
-	// testDirectMatch()
-	testSuburbAndFeatureMatch()
+// testAlias will test whether an alias is correctly parsed
+// attention!
+func testAlias() {
+	query = "read"
+	result = fetchResult(query, opt)
+	if !stringInSlice("books/records", result.FilterFeatures) {
+		fmt.Println("Should do alias match")
+	} else {
+		fmt.Println("Pass")
+	}
 }
 
+// testBoostProfile will test whether profiles are prioritised
+func testBoostProfile() {
+	result = fetchResult(query, opt)
+	if !result.HasProfile {
+		fmt.Println("Profiles should be prioritised")
+	} else {
+		fmt.Println("Pass")
+	}
+}
+
+func main() {
+	url := os.Getenv("URL")
+	if url != "" {
+		baseURL = url
+	}
+	// testSth()
+	testDirectMatch()
+	testSuburbAndFeatureMatch()
+	testAlias()
+	testBoostProfile()
+}
+
+// general func to see if an element is in slice
 func stringInSlice(a string, list []string) bool {
 	sort.Strings(list)
 	i := sort.SearchStrings(list, a)
