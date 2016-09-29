@@ -16,15 +16,19 @@ type QueryOption struct {
 	Newly      bool     `json:"newly"`
 }
 
-func getJSON(url string) map[string]interface{} {
+// QueryResult ...
+type QueryResult struct {
+	Count int64 `json:"count"`
+}
+
+func getJSON(url string) QueryResult {
 	r, err := http.Get(url)
 	if err != nil {
 		// return err
 		panic(err.Error())
 	}
 	defer r.Body.Close()
-	// fmt.Printf(r.Status)
-	message := make(map[string]interface{})
+	var message QueryResult
 	if r.StatusCode == 200 { // OK
 		// bodyBytes, _ := ioutil.ReadAll(r.Body)
 		json.NewDecoder(r.Body).Decode(&message)
@@ -33,7 +37,7 @@ func getJSON(url string) map[string]interface{} {
 	return message
 }
 
-func fetchResult(query string, option QueryOption) {
+func fetchResult(query string, option QueryOption) QueryResult {
 	url := fmt.Sprintf("http://localhost:8000/melbourne/api/search/%s?format=json", query)
 	opt, _ := json.Marshal(option)
 	if len(string(opt)) > 0 {
@@ -41,12 +45,27 @@ func fetchResult(query string, option QueryOption) {
 	}
 	fmt.Printf("fetch: %v", url)
 	m := getJSON(url)
-	fmt.Printf("%v", m["hasProfile"])
+	return m
+}
+
+func testSth() {
+	var (
+		query  string
+		opt    QueryOption
+		result QueryResult
+	)
+	opt = QueryOption{
+		Features: []string{"takeaway"}}
+	result = fetchResult(query, opt)
+	// count = result["count"] //type assertion convert interface{} into int
+	if result.Count < 20 {
+		fmt.Printf("count should be greater than 20 while it is %v", result.Count)
+	} else {
+		fmt.Printf("Pass")
+	}
 }
 
 func main() {
-	o := QueryOption{
-		Features: []string{"takeaway"}}
-	fetchResult("", o)
+	testSth()
 
 }
