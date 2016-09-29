@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"sort"
 )
 
 // QueryOption ...
@@ -20,6 +22,7 @@ type QueryOption struct {
 type QueryResult struct {
 	Count          int64    `json:"count"`
 	Filterfeatures []string `json:"filterfeatures"`
+	FilterSuburbs  []string `json:"filterSuburbs"`
 }
 
 var (
@@ -44,8 +47,17 @@ func getJSON(url string) QueryResult {
 
 func fetchResult(query string, option QueryOption) QueryResult {
 	url := fmt.Sprintf("%s/melbourne/api/search/%s?format=json", baseURL, query)
-	opt, _ := json.Marshal(option)
-	if len(string(opt)) > 0 {
+	// opt, _ := json.Marshal(option)
+	// if len(string(opt)) > 0 {
+	eptOpt := QueryOption{
+		Budget:     0,
+		Categories: nil,
+		Features:   nil,
+		Suburbs:    nil,
+		BDPick:     false,
+		Newly:      false}
+	if !reflect.DeepEqual(eptOpt, option) {
+		opt, _ := json.Marshal(option)
 		url = url + "&o=" + string(opt)
 	}
 	fmt.Printf("fetch: %v", url)
@@ -73,12 +85,37 @@ func testDirectMatch() {
 	if len(result.Filterfeatures) > 0 {
 		fmt.Println("Should not parse a direct match")
 	} else {
-		fmt.Printf("Pass")
+		fmt.Println("Pass")
+	}
+}
+
+// testSuburbAndFeatureMatch will parse query "fitzroy sushi"
+// as suburb "fitzroy" + feature "sushi"
+func testSuburbAndFeatureMatch() {
+	query = "fitzroy sushi"
+	result = fetchResult(query, opt)
+	// sort.Strings(result.Filterfeatures)
+	// i := sort.SearchStrings(result.Filterfeatures, "sushi")
+	if !stringInSlice("sushi", result.Filterfeatures) {
+		fmt.Println("Should do features match")
+	} else if !stringInSlice("fitzroy", result.FilterSuburbs) {
+		fmt.Println("Should do suburbs match")
+	} else {
+		fmt.Println("Pass")
 	}
 }
 
 func main() {
 	//testSth()
-	testDirectMatch()
+	// testDirectMatch()
+	testSuburbAndFeatureMatch()
+}
 
+func stringInSlice(a string, list []string) bool {
+	sort.Strings(list)
+	i := sort.SearchStrings(list, a)
+	if i >= 0 {
+		return true
+	}
+	return false
 }
