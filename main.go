@@ -8,7 +8,12 @@ import (
 
 // QueryOption ...
 type QueryOption struct {
-	BDPick bool
+	Budget     int64    `json:"budget"`
+	Categories []string `json:"categories"`
+	Features   []string `json:"features"`
+	Suburbs    []string `json:"suburbs"`
+	BDPick     bool     `json:"BDPick"`
+	Newly      bool     `json:"newly"`
 }
 
 func getJSON(url string) map[string]interface{} {
@@ -30,12 +35,18 @@ func getJSON(url string) map[string]interface{} {
 
 func fetchResult(query string, option QueryOption) {
 	url := fmt.Sprintf("http://localhost:8000/melbourne/api/search/%s?format=json", query)
+	opt, _ := json.Marshal(option)
+	if len(string(opt)) > 0 {
+		url = url + "&o=" + string(opt)
+	}
+	fmt.Printf("fetch: %v", url)
 	m := getJSON(url)
 	fmt.Printf("%v", m["hasProfile"])
 }
 
 func main() {
-	var o QueryOption
+	o := QueryOption{
+		Features: []string{"takeaway"}}
 	fetchResult("", o)
 
 }
