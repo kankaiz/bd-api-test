@@ -28,7 +28,7 @@ type QueryResult struct {
 }
 
 var (
-	baseURL = "http://localhost:8000" //"www.broadsheet.com.au"
+	baseURL = "https://www.broadsheet.com.au" //"http://localhost:8000"
 	query   string
 	opt     QueryOption
 	result  QueryResult
@@ -49,8 +49,6 @@ func getJSON(url string) QueryResult {
 
 func fetchResult(query string, option QueryOption) QueryResult {
 	url := fmt.Sprintf("%s/melbourne/api/search/%s?format=json", baseURL, query)
-	// opt, _ := json.Marshal(option)
-	// if len(string(opt)) > 0 {
 	eptOpt := QueryOption{
 		Budget:     0,
 		Categories: nil,
@@ -58,6 +56,7 @@ func fetchResult(query string, option QueryOption) QueryResult {
 		Suburbs:    nil,
 		BDPick:     false,
 		Newly:      false}
+	// if option is not null then append the request URL
 	if !reflect.DeepEqual(eptOpt, option) {
 		opt, _ := json.Marshal(option)
 		url = url + "&o=" + string(opt)
@@ -81,7 +80,7 @@ func testSth() {
 // testDirectMatch matches venue name "hinoki japanese pantry"
 // to prevent search enginee parsing name as "hinoki pantry" + feature "Japanese"
 func testDirectMatch() {
-	fmt.Println("Testing direct matching logic")
+	fmt.Println("Testing direct matching logic...")
 	query = "hinoki japanese pantry"
 	result = fetchResult(query, opt)
 	if len(result.FilterFeatures) > 0 {
@@ -94,6 +93,7 @@ func testDirectMatch() {
 // testSuburbAndFeatureMatch will parse query "fitzroy sushi"
 // as suburb "fitzroy" + feature "sushi"
 func testSuburbAndFeatureMatch() {
+	fmt.Println("Testing suburb and feature matching logic...")
 	query = "fitzroy sushi"
 	result = fetchResult(query, opt)
 	if !stringInSlice("sushi", result.FilterFeatures) {
@@ -106,8 +106,9 @@ func testSuburbAndFeatureMatch() {
 }
 
 // testAlias will test whether an alias is correctly parsed
-// attention!
+// attention! This alias may be edited, so the test case might fail
 func testAlias() {
+	fmt.Println("Testing alias matching logic...")
 	query = "read"
 	result = fetchResult(query, opt)
 	if !stringInSlice("books/records", result.FilterFeatures) {
@@ -119,6 +120,7 @@ func testAlias() {
 
 // testBoostProfile will test whether profiles are prioritised
 func testBoostProfile() {
+	fmt.Println("Testing profile boosting logic...")
 	result = fetchResult(query, opt)
 	if !result.HasProfile {
 		fmt.Println("Profiles should be prioritised")
@@ -133,10 +135,10 @@ func main() {
 		baseURL = url
 	}
 	// testSth()
+	testBoostProfile()
 	testDirectMatch()
 	testSuburbAndFeatureMatch()
 	testAlias()
-	testBoostProfile()
 }
 
 // general func to see if an element is in slice
